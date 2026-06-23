@@ -66,12 +66,33 @@ k3sctl \
 k3sctl --read-only
 ```
 
-**En contenedor**:
+**En contenedor (recomendado en el jump host)** — con el lanzador `run.sh`, que hace
+todo el setup por ti. Configúralo **una sola vez**:
+
 ```bash
-K3SCTL_API_KEY="$GEMINI_API_KEY" ./run.sh run
+cd ~/agent/k3s_agent
+
+# guarda la API key fuera del repo (solo legible por ti)
+echo 'K3SCTL_API_KEY=AQ...tu-key...' > ~/.k3sctl.env
+chmod 600 ~/.k3sctl.env
 ```
 
-La TUI necesita un terminal interactivo (TTY). En Docker, siempre con `-it`.
+A partir de ahí, **arrancar es un solo comando**:
+
+```bash
+./run.sh                 # arranca la TUI
+./run.sh run --read-only # ...pasando flags extra al agente
+./run.sh build           # reconstruir la imagen tras un git pull
+```
+
+`run.sh` prepara `~/.k3sctl` con los permisos del usuario del contenedor (uid 10001),
+copia el kubeconfig a un sitio legible por él, lee la key de `~/.k3sctl.env`, detecta
+si docker necesita `sudo` y lanza con `--network host` + `--insecure-skip-tls-verify`.
+Para Ollama u otro modelo, añade en `~/.k3sctl.env`:
+`K3SCTL_BASE_URL=http://localhost:11434/v1` y `K3SCTL_MODEL=llama3.1:8b`.
+
+La TUI necesita un terminal interactivo (TTY). En Docker, siempre con `-it` (ya
+incluido en `run.sh`).
 
 ---
 
@@ -343,6 +364,9 @@ k3sctl --model granite4.1:3b --context-budget 4000 --keep-turns 4
 | Síntoma | Causa probable / solución |
 |---------|---------------------------|
 | `kubectl no está instalado` | Instálalo en el PATH (o usa el contenedor, que lo incluye). |
+| `PermissionError: ... /home/app/.k3sctl/...` | La carpeta de estado pertenece a root, no al uid 10001 del contenedor. Usa `./run.sh` (lo arregla solo) o `sudo chown -R 10001:10001 ~/.k3sctl`. |
+| `TLS handshake timeout` al hacer `docker build` (manifest de `python:3.12-slim`) | Red intermitente hacia Docker Hub. Reintenta; si persiste `docker pull python:3.12-slim` y/o configura proxy del *daemon* en `/etc/systemd/system/docker.service.d/http-proxy.conf`. |
+| `./run.sh: command not found` | El script venía con CRLF o sin permiso de ejecución. Ya corregido en el repo (`.gitattributes` + bit +x); haz `git pull` y `chmod +x run.sh`. |
 | Errores de conexión al API server (`got 0`, timeout) | Red/jump host, no permisos. Verifica que alcanzas `10.1.110.11:6443`; usa `--network host` en Docker. |
 | `x509`/certificado | Cert autofirmado de k3s: añade `--insecure-skip-tls-verify`. |
 | `Function call is missing a thought_signature` | Estás usando Gemini 3.x. Cambia a `gemini-2.5-flash`. |
