@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "k3sctl"
+version = "0.1.0"
+description = "Agente conversacional para administrar clusters k3s, con TUI estilo Claude Code y herramientas enchufables."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Gamma Ingenieros" }]
+
+# Verificado contra PyPI (2026-06): textual 8.2.7, openai 2.43.0, rich 15.0.0.
+# Se fijan rangos conservadores (compatibles con el major actual) para no
+# quedar atados a un parche concreto pero evitar saltos de major sorpresa.
+dependencies = [
+    "openai>=1.40,<3",
+    "textual>=8,<9",
+    "rich>=13.7,<16",
+]
+
+[project.optional-dependencies]
+# Backend nativo opcional para Gemini 3.x (reenvío de thought_signature).
+# NO se usa en el camino OpenAI-compat por defecto. Ver README.
+gemini-native = ["google-genai>=1.0"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+k3sctl = "k3sctl.app:main"
+
+[tool.setuptools.packages.find]
+include = ["k3sctl*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

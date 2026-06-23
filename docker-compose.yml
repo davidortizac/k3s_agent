@@ -1,0 +1,33 @@
+# docker-compose para k3sctl.
+# Uso:  GEMINI_API_KEY=xxx docker compose run --rm k3sctl
+# (compose levanta el servicio con stdin abierto y tty; ver flags abajo).
+services:
+  k3sctl:
+    build:
+      context: .
+      args:
+        # Verifica versiones actuales antes de fijar (ver README / nota 10 del spec).
+        KUBECTL_VERSION: v1.31.0
+        HELM_VERSION: v3.16.2
+    image: k3sctl:latest
+    # La TUI necesita TTY + stdin interactivo.
+    stdin_open: true
+    tty: true
+    # El contenedor debe alcanzar el API server del cluster (10.1.110.11:6443) y el
+    # endpoint del LLM. Si el API server está en una red sólo accesible desde el host,
+    # usa host networking (descomenta). En ese modo se ignoran los port mappings.
+    # network_mode: host
+    environment:
+      # Secretos por entorno, NUNCA horneados en la imagen.
+      K3SCTL_API_KEY: ${GEMINI_API_KEY:-}
+      K3SCTL_BASE_URL: ${K3SCTL_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai/}
+      K3SCTL_MODEL: ${K3SCTL_MODEL:-gemini-2.5-flash}
+    volumes:
+      # kubeconfig en SOLO LECTURA.
+      - ${KUBECONFIG_HOST:-~/.kube/config}:/home/app/.kube/config:ro
+      # Estado persistente (memoria + sesiones) read-write.
+      - ${K3SCTL_STATE:-~/.k3sctl}:/home/app/.k3sctl
+    # Flags por defecto del agente (kubeconfig montado + cert autofirmado de k3s).
+    command:
+      - --kubeconfig=/home/app/.kube/config
+      - --insecure-skip-tls-verify
