@@ -1,0 +1,9 @@
+# Forzar LF en scripts y ficheros que se ejecutan en Linux/contenedor,
+# aunque se editen/commiteen desde Windows (evita el "command not found" por CRLF).
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+Makefile    text eol=lf
+*.py        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.toml      text eol=lf
