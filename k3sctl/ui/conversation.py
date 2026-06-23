@@ -66,16 +66,18 @@ class ToolCard(Collapsible):
         self.reason = reason
         self._status = "pending"
         self._output_widget = Static("(pendiente)", classes="tool-output")
-        super().__init__(self._output_widget, title=self._title(), collapsed=True)
+        # OJO: `Collapsible` ya define un atributo de instancia `_title` (el widget
+        # del título), así que NO podemos usar ese nombre para nuestro método.
+        super().__init__(self._output_widget, title=self._title_markup(), collapsed=True)
 
-    def _title(self) -> str:
+    def _title_markup(self) -> str:
         icon, color = STATUS_ICON.get(self._status, ("?", "white"))
         tag = "MOD" if self.classification == "mutating" else "lec"
         return f"[{color}]{icon}[/] [{tag}] {self.command_display}"
 
     def set_status(self, status: str) -> None:
         self._status = status
-        self.title = self._title()
+        self.title = self._title_markup()
 
     def set_output(self, text: str, expand: bool = False) -> None:
         self._output_widget.update(text or "(sin salida)")
